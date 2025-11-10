@@ -111,11 +111,11 @@ def within(val, low, high):
 # ---------- UI ----------
 
 init_state()
-st.title("📈 Real-Time Sensor Dashboard (Simulated)")
+st.title("Real-Time Sensor Dashboard")
 st.caption("Container temperature & pressure with redundancy voting, thresholds, anomalies, interlocks, and SIS trip.")
 
 with st.sidebar:
-    st.header("⚙️ Controls")
+    st.header("Controls")
     refresh_sec = st.slider("Refresh interval (seconds)", 1, 10, 2, help="How often to fetch & render new data.")
     win = st.selectbox("Time window", ["Day","Week","Month"], index=0)
     # For simulation, keep everything but we will filter by timedelta
@@ -141,7 +141,7 @@ with st.sidebar:
     manual_permit = st.checkbox("Manual Permit Enabled", value=True)
 
     st.subheader("SIS Trip Control")
-    if st.button("🔁 Reset SIS Trip"):
+    if st.button("Reset SIS Trip"):
         st.session_state.sis_tripped = False
 
 # generate one new data point per refresh
