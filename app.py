@@ -7,15 +7,11 @@ import plotly.graph_objects as go
 import streamlit as st
 
 st.set_page_config(page_title="Sensor Dashboard", layout="wide", page_icon="📈")
+
 st.markdown("""
 <style>
-/* tighten page padding */
 .block-container{padding-top:1rem;padding-bottom:1rem;}
-/* nicer metric tiles */
-.stMetric{
-  background:#0b1220;border:1px solid #1f2937;border-radius:12px;
-  padding:8px 12px;
-}
+.stMetric{background:#0b1220;border:1px solid #1f2937;border-radius:12px;padding:8px 12px;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -183,8 +179,8 @@ overall_ok = T_ok and P_ok and (not new_row["any_sensor_fault"]) and perm_ok and
 st.markdown("""
 <style>
 .scada-header {
-  display:flex;align-items:center;gap:12px;
-  padding:10px 14px;margin:4px 0 12px 0;border-radius:12px;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:10px 14px;margin:4px 0 10px 0;border-radius:12px;
   background:linear-gradient(135deg,#0f172a,#111827);color:#e5e7eb;
   box-shadow:0 8px 20px rgba(0,0,0,.25) inset, 0 2px 8px rgba(0,0,0,.25);
   font-weight:600;letter-spacing:0.3px;
@@ -198,10 +194,29 @@ st.markdown("""
 .light-red   {background:#ef4444; box-shadow:0 0 10px #ef4444;}
 .panel {
   padding:10px;border-radius:12px;background:#0b1220;
-  border:1px solid #1f2937;
+  border:1px solid #1f2937;margin-top:8px;
   box-shadow:0 8px 20px rgba(0,0,0,.25) inset, 0 2px 8px rgba(0,0,0,.25);
 }
 </style>
+""", unsafe_allow_html=True)
+
+# Top badges (left-aligned)
+st.markdown(f"""
+<div class="scada-header">
+  <span class="dot {'light-red blink' if st.session_state.sis_tripped else ('light-yellow' if (new_row["T_anom"] or new_row["P_anom"] or new_row["any_sensor_fault"] or not perm_ok or not T_ok or not P_ok) else 'light-green')}"></span>
+  <span>SCADA — Container Control</span>
+  <span class="badge">Window: {win}</span>
+  <span class="badge">Sampling: {refresh_sec}s</span>
+</div>
+""", unsafe_allow_html=True)
+
+# Full-width alarm panel
+st.markdown(f"""
+<div class="panel">
+  <b>ALARM:</b> {'<span style="color:#ef4444">SIS TRIPPED</span>' if st.session_state.sis_tripped else ('<span style="color:#f59e0b">CHECK CONDITIONS</span>' if not (T_ok and P_ok and perm_ok) else '<span style="color:#22c55e">NORMAL</span>')}
+  <br/><b>Anomaly:</b> {'T ' if new_row['T_anom'] else ''}{'P' if new_row['P_anom'] else ''}{'' if (new_row['T_anom'] or new_row['P_anom']) else '—'}
+  <br/><b>Permissives:</b> {'OK' if perm_ok else 'BLOCKED'}
+</div>
 """, unsafe_allow_html=True)
 
 header_cols = st.columns([0.62, 0.38])
@@ -335,10 +350,13 @@ c1, c2 = st.columns(2)
 with c1: st.plotly_chart(figT, use_container_width=True)
 with c2: st.plotly_chart(figP, use_container_width=True)
 
-fig_gT.update_layout(margin=dict(l=10,r=10,t=40,b=0))
-fig_gP.update_layout(margin=dict(l=10,r=10,t=40,b=0))
-figT.update_layout(margin=dict(l=10,r=10,t=40,b=0))
-figP.update_layout(margin=dict(l=10,r=10,t=40,b=0))
+# For both gauges:
+fig_gT.update_traces(number={'font': {'size': 48}}, gauge={'bar': {'thickness': 0.25}})
+fig_gT.update_layout(height=260, margin=dict(l=10,r=10,t=30,b=0))
+
+fig_gP.update_traces(number={'font': {'size': 48}}, gauge={'bar': {'thickness': 0.25}})
+fig_gP.update_layout(height=260, margin=dict(l=10,r=10,t=30,b=0))
+
 
 # ---------- Table (latest N) ----------
 st.subheader("Latest Samples")
