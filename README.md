@@ -29,4 +29,4 @@ streamlit run app.py
 ```
 
 The app simulates one data point every refresh. Use the sidebar to tune thresholds,
-toggle interlocks, and set the time window. SIS trips latch until reset.# Sensor-Dashboard
+toggle interlocks, and set the time window. SIS trips latch until reset.
