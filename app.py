@@ -7,6 +7,17 @@ import plotly.graph_objects as go
 import streamlit as st
 
 st.set_page_config(page_title="Sensor Dashboard", layout="wide", page_icon="📈")
+st.markdown("""
+<style>
+/* tighten page padding */
+.block-container{padding-top:1rem;padding-bottom:1rem;}
+/* nicer metric tiles */
+.stMetric{
+  background:#0b1220;border:1px solid #1f2937;border-radius:12px;
+  padding:8px 12px;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ---------- Utilities ----------
 
@@ -193,7 +204,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-header_cols = st.columns([0.7, 0.3])
+header_cols = st.columns([0.62, 0.38])
 with header_cols[0]:
     st.markdown(f"""
     <div class="scada-header">
@@ -212,13 +223,18 @@ with header_cols[1]:
     </div>
     """, unsafe_allow_html=True)
 
-# KPI tiles (same metrics as before)
-kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
-kpi1.metric("Temp (°C) [voted]", f"{new_row['T_voted']:.2f}", help="Median of T1,T2,T3")
-kpi2.metric("Pressure (bar) [voted]", f"{new_row['P_voted']:.3f}", help="Median of P1,P2")
-kpi3.metric("Sensor fault?", "Yes" if new_row["any_sensor_fault"] else "No")
-kpi4.metric("Anomaly (T/P)", f"{'T' if new_row['T_anom'] else '-'} / {'P' if new_row['P_anom'] else '-'}")
-kpi5.metric("SIS Trip", "TRIPPED" if st.session_state.sis_tripped else "OK")
+# KPI tiles
+m1, m2, m3, m4 = st.columns(4)
+m1.metric("Temp (°C) [voted]", f"{new_row['T_voted']:.2f}", help="Median of T1,T2,T3")
+m2.metric("Pressure (bar) [voted]", f"{new_row['P_voted']:.3f}", help="Median of P1,P2")
+
+# compact status summary
+_status = "TRIPPED" if st.session_state.sis_tripped else ("WARNING" if not (T_ok and P_ok and perm_ok) else "OK")
+m3.metric("Status", _status)
+
+# anomaly summary
+_anom = f"{'T' if new_row['T_anom'] else '-'} / {'P' if new_row['P_anom'] else '-'}"
+m4.metric("Anomaly (T/P)", _anom)
 
 # Gauges row (needs plotly.graph_objects as go — you already import go at the top)
 g1, g2 = st.columns(2)
@@ -260,6 +276,7 @@ fig_gP = go.Figure(go.Indicator(
 ))
 fig_gP.update_layout(height=300, margin=dict(l=20,r=20,t=40,b=10))
 g2.plotly_chart(fig_gP, use_container_width=True)
+
 
 # ---------- Status & Interlocks ----------
 st.subheader("System Status")
@@ -317,6 +334,11 @@ figP.update_layout(title="Pressure vs Time", xaxis_title="Time (UTC)", yaxis_tit
 c1, c2 = st.columns(2)
 with c1: st.plotly_chart(figT, use_container_width=True)
 with c2: st.plotly_chart(figP, use_container_width=True)
+
+fig_gT.update_layout(margin=dict(l=10,r=10,t=40,b=0))
+fig_gP.update_layout(margin=dict(l=10,r=10,t=40,b=0))
+figT.update_layout(margin=dict(l=10,r=10,t=40,b=0))
+figP.update_layout(margin=dict(l=10,r=10,t=40,b=0))
 
 # ---------- Table (latest N) ----------
 st.subheader("Latest Samples")
