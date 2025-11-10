@@ -6,14 +6,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-st.set_page_config(page_title="Sensor Dashboard", layout="wide", page_icon="📈")
-
-st.markdown("""
-<style>
-.block-container{padding-top:1rem;padding-bottom:1rem;}
-.stMetric{background:#0b1220;border:1px solid #1f2937;border-radius:12px;padding:8px 12px;}
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="Sensor Dashboard (Simulated)", layout="wide", page_icon="📈")
 
 # ---------- Utilities ----------
 
@@ -174,124 +167,14 @@ T_ok    = within(new_row["T_voted"], T_low, T_high)
 P_ok    = within(new_row["P_voted"], P_low, P_high)
 perm_ok = power_ok and valve_ok and pump_ok and manual_permit
 overall_ok = T_ok and P_ok and (not new_row["any_sensor_fault"]) and perm_ok and (not st.session_state.sis_tripped)
+
 # ---------- KPI Row ----------
-# SCADA-style header & alarm banner
-st.markdown("""
-<style>
-.scada-header {
-  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-  padding:10px 14px;margin:4px 0 10px 0;border-radius:12px;
-  background:linear-gradient(135deg,#0f172a,#111827);color:#e5e7eb;
-  box-shadow:0 8px 20px rgba(0,0,0,.25) inset, 0 2px 8px rgba(0,0,0,.25);
-  font-weight:600;letter-spacing:0.3px;
-}
-.badge {padding:4px 8px;border-radius:8px;background:#1f2937;color:#93c5fd;border:1px solid #334155;}
-.dot {width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:6px;box-shadow:0 0 10px rgba(0,0,0,.4);}
-.blink {animation: blink 1s step-start infinite;}
-@keyframes blink {50% {opacity: .35;}}
-.light-green {background:#22c55e; box-shadow:0 0 10px #22c55e;}
-.light-yellow{background:#f59e0b; box-shadow:0 0 10px #f59e0b;}
-.light-red   {background:#ef4444; box-shadow:0 0 10px #ef4444;}
-.panel {
-  padding:10px;border-radius:12px;background:#0b1220;
-  border:1px solid #1f2937;margin-top:8px;
-  box-shadow:0 8px 20px rgba(0,0,0,.25) inset, 0 2px 8px rgba(0,0,0,.25);
-}
-</style>
-""", unsafe_allow_html=True)
-
-# Top badges (left-aligned)
-st.markdown(f"""
-<div class="scada-header">
-  <span class="dot {'light-red blink' if st.session_state.sis_tripped else ('light-yellow' if (new_row["T_anom"] or new_row["P_anom"] or new_row["any_sensor_fault"] or not perm_ok or not T_ok or not P_ok) else 'light-green')}"></span>
-  <span>SCADA — Container Control</span>
-  <span class="badge">Window: {win}</span>
-  <span class="badge">Sampling: {refresh_sec}s</span>
-</div>
-""", unsafe_allow_html=True)
-
-# Full-width alarm panel
-st.markdown(f"""
-<div class="panel">
-  <b>ALARM:</b> {'<span style="color:#ef4444">SIS TRIPPED</span>' if st.session_state.sis_tripped else ('<span style="color:#f59e0b">CHECK CONDITIONS</span>' if not (T_ok and P_ok and perm_ok) else '<span style="color:#22c55e">NORMAL</span>')}
-  <br/><b>Anomaly:</b> {'T ' if new_row['T_anom'] else ''}{'P' if new_row['P_anom'] else ''}{'' if (new_row['T_anom'] or new_row['P_anom']) else '—'}
-  <br/><b>Permissives:</b> {'OK' if perm_ok else 'BLOCKED'}
-</div>
-""", unsafe_allow_html=True)
-
-header_cols = st.columns([0.62, 0.38])
-with header_cols[0]:
-    st.markdown(f"""
-    <div class="scada-header">
-      <span class="dot {'light-red blink' if st.session_state.sis_tripped else ('light-yellow' if (new_row["T_anom"] or new_row["P_anom"] or new_row["any_sensor_fault"] or not perm_ok or not T_ok or not P_ok) else 'light-green')}"></span>
-      <span>SCADA — Container Control</span>
-      <span class="badge">Window: {win}</span>
-      <span class="badge">Sampling: {refresh_sec}s</span>
-    </div>
-    """, unsafe_allow_html=True)
-with header_cols[1]:
-    st.markdown(f"""
-    <div class="panel">
-      <b>ALARM:</b> {'<span style="color:#ef4444">SIS TRIPPED</span>' if st.session_state.sis_tripped else ('<span style="color:#f59e0b">CHECK CONDITIONS</span>' if not (T_ok and P_ok and perm_ok) else '<span style="color:#22c55e">NORMAL</span>')}
-      <br/><b>Anomaly:</b> {'T ' if new_row['T_anom'] else ''}{'P' if new_row['P_anom'] else ''}{'' if (new_row['T_anom'] or new_row['P_anom']) else '—'}
-      <br/><b>Permissives:</b> {'OK' if perm_ok else 'BLOCKED'}
-    </div>
-    """, unsafe_allow_html=True)
-
-# KPI tiles
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("Temp (°C) [voted]", f"{new_row['T_voted']:.2f}", help="Median of T1,T2,T3")
-m2.metric("Pressure (bar) [voted]", f"{new_row['P_voted']:.3f}", help="Median of P1,P2")
-
-# compact status summary
-_status = "TRIPPED" if st.session_state.sis_tripped else ("WARNING" if not (T_ok and P_ok and perm_ok) else "OK")
-m3.metric("Status", _status)
-
-# anomaly summary
-_anom = f"{'T' if new_row['T_anom'] else '-'} / {'P' if new_row['P_anom'] else '-'}"
-m4.metric("Anomaly (T/P)", _anom)
-
-# Gauges row (needs plotly.graph_objects as go — you already import go at the top)
-g1, g2 = st.columns(2)
-
-# Temperature gauge
-fig_gT = go.Figure(go.Indicator(
-    mode = "gauge+number",
-    value = new_row["T_voted"],
-    title = {'text': "Temperature (°C) — Voted"},
-    gauge = {
-        "axis": {"range": [min(T_sis_low-5, T_low-5), max(T_sis_high+5, T_high+5)]},
-        "bar": {"thickness": 0.35},
-        "steps": [
-            {"range": [T_sis_low-5, T_low], "color": "#1e40af"},
-            {"range": [T_low, T_high], "color": "#15803d"},
-            {"range": [T_high, T_sis_high+5], "color": "#b91c1c"},
-        ],
-        "threshold": {"line": {"color": "#ef4444", "width": 4}, "thickness": 0.9, "value": T_high}
-    }
-))
-fig_gT.update_layout(height=300, margin=dict(l=20,r=20,t=40,b=10))
-g1.plotly_chart(fig_gT, use_container_width=True)
-
-# Pressure gauge
-fig_gP = go.Figure(go.Indicator(
-    mode = "gauge+number",
-    value = new_row["P_voted"],
-    title = {'text': "Pressure (bar) — Voted"},
-    gauge = {
-        "axis": {"range": [min(P_sis_low-0.2, P_low-0.2), max(P_sis_high+0.2, P_high+0.2)]},
-        "bar": {"thickness": 0.35},
-        "steps": [
-            {"range": [P_sis_low-0.2, P_low], "color": "#1e40af"},
-            {"range": [P_low, P_high], "color": "#15803d"},
-            {"range": [P_high, P_sis_high+0.2], "color": "#b91c1c"},
-        ],
-        "threshold": {"line": {"color": "#ef4444", "width": 4}, "thickness": 0.9, "value": P_high}
-    }
-))
-fig_gP.update_layout(height=300, margin=dict(l=20,r=20,t=40,b=10))
-g2.plotly_chart(fig_gP, use_container_width=True)
-
+kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
+kpi1.metric("Temp (°C) [voted]", f"{new_row['T_voted']:.2f}", help="Median of T1,T2,T3")
+kpi2.metric("Pressure (bar) [voted]", f"{new_row['P_voted']:.3f}", help="Median of P1,P2")
+kpi3.metric("Sensor fault?", "Yes" if new_row["any_sensor_fault"] else "No")
+kpi4.metric("Anomaly (T/P)", f"{'T' if new_row['T_anom'] else '-'} / {'P' if new_row['P_anom'] else '-'}")
+kpi5.metric("SIS Trip", "TRIPPED" if st.session_state.sis_tripped else "OK")
 
 # ---------- Status & Interlocks ----------
 st.subheader("System Status")
@@ -349,14 +232,6 @@ figP.update_layout(title="Pressure vs Time", xaxis_title="Time (UTC)", yaxis_tit
 c1, c2 = st.columns(2)
 with c1: st.plotly_chart(figT, use_container_width=True)
 with c2: st.plotly_chart(figP, use_container_width=True)
-
-# For both gauges:
-fig_gT.update_traces(number={'font': {'size': 48}}, gauge={'bar': {'thickness': 0.25}})
-fig_gT.update_layout(height=260, margin=dict(l=10,r=10,t=30,b=0))
-
-fig_gP.update_traces(number={'font': {'size': 48}}, gauge={'bar': {'thickness': 0.25}})
-fig_gP.update_layout(height=260, margin=dict(l=10,r=10,t=30,b=0))
-
 
 # ---------- Table (latest N) ----------
 st.subheader("Latest Samples")
