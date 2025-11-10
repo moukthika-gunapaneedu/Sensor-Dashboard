@@ -240,4 +240,4 @@ st.dataframe(dfw.tail(25).set_index("ts"))
 # ---------- Auto-refresh ----------
 # Streamlit reruns the script top-to-bottom; sleep for refresh interval
 time.sleep(refresh_sec)
-st.experimental_rerun()
+st.rerun()
