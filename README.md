@@ -1,4 +1,4 @@
-# Real-Time Sensor Dashboard (Simulated)
+# Real-Time Sensor Dashboard
 
 This Streamlit app simulates real-time sensor data for a pressurized container and
 renders a live dashboard with:
