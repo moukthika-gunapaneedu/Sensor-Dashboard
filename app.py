@@ -113,6 +113,8 @@ def within(val, low, high):
 init_state()
 st.title("Real-Time Sensor Dashboard")
 st.caption("Container temperature & pressure with redundancy voting, thresholds, anomalies, interlocks, and SIS trip.")
+st.sidebar.markdown("---")
+page = st.sidebar.radio("View", ["Dashboard","Operations"], index=0)
 
 with st.sidebar:
     st.header("Controls")
@@ -241,3 +243,39 @@ st.dataframe(dfw.tail(25).set_index("ts"))
 # Streamlit reruns the script top-to-bottom; sleep for refresh interval
 time.sleep(refresh_sec)
 st.rerun()
+
+# ================= Operations Page =================
+if page == "Operations":
+    st.header("📦 Operations — Post-Bind Monitoring")
+    try:
+        import duckdb, plotly.express as px
+        con = duckdb.connect("warehouse.duckdb", read_only=True)
+        at_risk = con.execute("""
+            WITH breaches AS (
+              SELECT shipment_id,
+                     DATE_TRUNC('minute', ts) AS minute,
+                     MAX(breach_normal) AS breach_norm,
+                     MAX(breach_sis)    AS breach_sis
+              FROM fact_telemetry
+              GROUP BY shipment_id, DATE_TRUNC('minute', ts)
+            )
+            SELECT shipment_id,
+                   SUM(breach_norm) AS minutes_breached,
+                   SUM(breach_sis)  AS sis_events
+            FROM breaches
+            GROUP BY shipment_id
+            ORDER BY minutes_breached DESC
+            LIMIT 20;
+        """).df()
+        st.subheader("Shipments at Risk (last load)")
+        st.dataframe(at_risk, use_container_width=True)
+
+        if not at_risk.empty:
+            st.subheader("Breach Rate by Shipment")
+            fig = px.bar(at_risk, x="shipment_id", y="minutes_breached")
+            st.plotly_chart(fig, use_container_width=True)
+        con.close()
+        st.info("Data source: DuckDB warehouse.duckdb → fact_telemetry")
+    except Exception as e:
+        st.warning("No warehouse found yet. Run: `python data_pipeline/ingest.py` then `python data_pipeline/curate.py`.")
+        st.caption(str(e))
