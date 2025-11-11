@@ -6,7 +6,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-st.set_page_config(page_title="Sensor Dashboard (Simulated)", layout="wide", page_icon="📈")
+st.set_page_config(page_title="Sensor Dashboard", layout="wide", page_icon="📈")
 
 # ---------- Utilities ----------
 

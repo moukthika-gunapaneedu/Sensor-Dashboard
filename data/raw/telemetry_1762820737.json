@@ -1,0 +1,1 @@
+[{"shipment_id": "SHIP-001", "ts": "2025-11-11T00:25:37.596544Z", "temp_voted": 70.0, "pressure_voted": 2.02, "T_low": 60, "T_high": 90, "T_sis_low": 55, "T_sis_high": 95, "P_low": 1.5, "P_high": 2.5, "P_sis_low": 1.2, "P_sis_high": 2.8, "anomaly_flag": 0}]
